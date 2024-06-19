@@ -6,22 +6,46 @@ const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const PUBLIC_KEY = process.env.PUBLIC_KEY;
 
-const web3 = new Web3(new Web3.providers.HttpProvider(API_URL));
+if (!API_URL || !CONTRACT_ADDRESS || !PRIVATE_KEY || !PUBLIC_KEY) {
+    console.error("Please ensure all environment variables are properly set.");
+    alert("Configuration error detected. Check the console for details.");
+}
 
-const cryptoKittiesCloneContract = new web3.eth.Contract(CryptoKittiesCloneABI, CONTRACT_ADDRESS);
+let web3;
+try {
+    web3 = new Web3(new Web3.providers.HttpProvider(API_URL));
+} catch (error) {
+    console.error("Failed to connect to the Ethereum network:", error);
+    alert("Could not connect to the Ethereum network. Please check your API URL.");
+}
+
+const cryptoKittiesCloneContract = web3 ? new web3.eth.Contract(CryptoKittiesCloneABI, CONTRACT_ADDRESS) : null;
+if (!cryptoKittiesCloneContract) {
+    console.error("Failed to instantiate the contract. Please check your ABI and contract address.");
+    alert("Contract setup failure. Check the console for details.");
+}
 
 async function loadKitties() {
-    const kittiesCount = await cryptoKittiesCloneContract.methods.totalSupply().call();
-    const kitties = [];
-    for (let i = 0; i < kittiesCount; i++) {
-        const kitty = await cryptoKittiesCloneContract.methods.kitties(i).call();
-        kitties.push(kitty);
+    try {
+        const kittiesCount = await cryptoKittiesCloneContract.methods.totalSupply().call();
+        const kitties = [];
+        for (let i = 0; i < kittiesCount; i++) {
+            const kitty = await cryptoKittiesCloneContract.methods.kitties(i).call();
+            kitties.push(kitty);
+        }
+        updateKittiesUI(kitties);
+    } catch (error) {
+        console.error("Error loading kitties:", error);
+        alert("Failed to load kitties.");
     }
-    updateKittiesUI(kitties);
 }
 
 function updateKittiesUI(kitties) {
     const kittiesList = document.getElementById('kittiesList');
+    if (!kittiesList) {
+        console.error("Failed to find the kittiesList element. Please check your HTML.");
+        return;
+    }
     kittiesList.innerHTML = '';
 
     kitties.forEach((kitty) => {
@@ -39,7 +63,7 @@ async function connectWallet() {
             alert('Wallet connected successfully');
         } catch (error) {
             console.error('User denied account access', error);
-            alert('Failed to connect wallet');
+            alert('Failed to connect wallet. Please try again.');
         }
     } else {
         alert('Non-Ethereum browser detected. Please install MetaMask');
@@ -47,7 +71,7 @@ async function connectWallet() {
 }
 
 async function createKitty(color) {
-    if (!web3.eth.defaultAccount) {
+    if (!web3 || !web3.eth.defaultAccount) {
         alert('Please connect your wallet first.');
         return;
     }
@@ -73,11 +97,13 @@ async function createKitty(color) {
         loadKitties();
     } catch (error) {
         console.error('Error creating kitty:', error);
-        alert('Failed to create kitty');
+        alert('Failed to create kitty. Please check the console for more details.');
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    connectWallet();
-    loadKitties();
+    if (cryptoKittiesCloneContract) {
+        connectWallet();
+        loadKitties();
+    }
 });
