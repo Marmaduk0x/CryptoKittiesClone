@@ -8,21 +8,19 @@ let contract;
 let accounts;
 
 const initWeb3 = async () => {
-  if(window.ethereum) {
-    web3 = new Web3(window.ethereum);
-    try {
-      await window.ethereum.enable();
+  try{
+    if(window.ethereum) {
+      web3 = new Web3(window.ethereum);
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
       initContract();
-    } catch(error) {
-      console.error("User denied account access");
+    } else if(window.web3) {
+      web3 = new Web3(web3.currentProvider);
+      initContract();
+    } else {
+      console.error("Non-Ethereum browser detected. You should consider trying MetaMask!");
     }
-  }
-  else if(window.web3) {
-    web3 = new Web3(web3.currentProvider);
-    initContract();
-  }
-  else {
-    console.error("Non-Ethereum browser detected. You should consider trying MetaMask!");
+  } catch(error) {
+    console.error("Error during initialization:", error);
   }
 };
 
@@ -32,17 +30,29 @@ const initContract = () => {
 };
 
 const initApp = () => {
-  loadAccounts();
+  loadAccounts().then(() => {
+    console.log("Accounts loaded:", accounts);
+  }).catch(error => {
+    console.error("Error loading accounts:", error);
+  });
 };
 
 const loadAccounts = async () => {
-  accounts = await web3.eth.getAccounts();
-  console.log(accounts);
+  try{
+    accounts = await web3.eth.getAccounts();
+  } catch(error) {
+    throw new Error("Failed to get accounts:", error);
+  }
 };
 
 const getKittyDetails = async (kittyId) => {
-  const kittyDetails = await contract.methods.getKitty(kittyId).call();
-  return kittyDetails;
+  try{
+    const kittyDetails = await contract.methods.getKitty(kittyId).call();
+    return kittyDetails;
+  } catch(error) {
+    console.error("Error fetching kitty details:", error);
+    return null;
+  }
 };
 
 const breedKitties = async (kittyId1, kittyId2) => {
@@ -54,4 +64,10 @@ const breedKitties = async (kittyId1, kittyId2) => {
   }
 };
 
-window.addEventListener('load', initWeb2);
+window.addEventListener('load', () => {
+  initWeb2().then(() => {
+    console.log("Web3 initialized successfully.");
+  }).catch(error => {
+    console.error("Error initializing Web3:", error);
+  });
+});
