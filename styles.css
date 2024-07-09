@@ -8,14 +8,15 @@ body {
   font-family: 'Arial', sans-serif;
   line-height: 1.6;
   color: #333;
-  background-color: #f4f4f4;
+  background-color: #eaeaea; /* Updated background color for a softer look */
 }
 
 header {
-  background: #007bff;
+  background: #5a99d4; /* Softer blue */
   color: #fff;
   padding: 1rem;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,.1); /* Slight shadow for depth */
 }
 
 .main-container {
@@ -28,24 +29,32 @@ header {
 
 .cat-card {
   background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  border: 2px solid #bbb; /* Smoother border color */
+  border-radius: 10px; /* Rounded borders for a sleek appearance */
   width: calc(33.333% - 20px);
   margin: 10px;
   padding: 20px;
-  box-shadow: 0 5px 15px rgba(0,0,0,.08);
+  box-shadow: 0 5px 15px rgba(0,0,0,.1); /* Updated shadow for more subtlety */
+  transition: transform .2s; /* Smooth transition for hover effect */
+}
+
+.cat-card:hover {
+  transform: scale(1.03); /* Slight scale on hover for interactivity */
 }
 
 form.cat-form {
   margin-top: 20px;
   background: #fff;
   padding: 20px;
-  border-radius: 5px;
+  border-radius: 8px; /* Updated border-radius */
+  box-shadow: 0 4px 8px rgba(0,0,0,.05); /* Subtle shadow for form */
 }
 
 form.cat-form label {
   display: block;
   margin-bottom: 10px;
+  color: #555; /* Darker color for better readability */
+  text-shadow: 1px 1px 0px #fff; /* Subtle text shadow for depth */
 }
 
 form.cat-form input[type="text"],
@@ -53,17 +62,19 @@ form.cat-form select {
   width: 100%;
   padding: 10px;
   margin-bottom: 20px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  border: 1px solid #ccc; /* Softer border */
+  border-radius: 8px; /* Consistent border-radius */
+  background-color: #f9f9f9; /* Slight off-white background */
 }
 
 form.cat-form input[type="submit"] {
-  background: #007bff;
+  background: #5a99d4; /* Consistent button color with header */
   color: #fff;
   padding: 10px 20px;
   border: 0;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 8px; /* Consistent border-radius */
+  box-shadow: 0 2px 4px rgba(0,0,0,.2); /* Button shadow for depth */
 }
 
 @media (max-width: 768px) {
