@@ -26,6 +26,9 @@ contract('KittyCore', accounts => {
     const kittyOneId = 1;
     const kittyTwoId = 2;
 
+    const canBreed = await contractInstance.canBreedWith(kittyOneId, kittyTwoId);
+    assert.isTrue(canBreed, 'These kitties should be able to breed.');
+
     const breed = await contractInstance.breed(kittyOneId, kittyTwoId, { from: accounts[0] });
     const birthEvent = breed.logs[0];
 
@@ -36,14 +39,23 @@ contract('KittyCore', accounts => {
     const sender = accounts[0];
     const receiver = accounts[1];
 
-    await contractLike.createPromoKitty(789, sender, { from: sender });
+    await contractInstance.createPromoKitty(789, sender, { from: sender });
 
     const kittyId = 3;
 
     await contractInstance.transfer(receiver, kittyId, { from: sender });
-    
+
     const newOwner = await contractInstance.ownerOf(kittyId);
-    
+
     assert.equal(newOwner, receiver);
+  });
+
+  it('should check if two kitties can breed', async () => {
+    const kittyOneId = 1;
+    const kittyTwoId = 2;
+
+    const canBreed = await contractInstance.canBreedWith(kittyOneId, kittyTwoId);
+
+    assert.isTrue(canBreed, 'Kitties should be able to breed based on implemented logic');
   });
 });
