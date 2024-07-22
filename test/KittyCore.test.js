@@ -7,6 +7,11 @@ contract('KittyCore', accounts => {
 
   before(async () => {
     contractInstance = await KittyCore.deployed();
+    
+    // Pre-create promo kitties to be used in multiple tests
+    await contractInstance.createPromoKitty(123, accounts[0], { from: accounts[0] });
+    await contractInstance.createPromoKitty(456, accounts[0], { from: accounts[0] });
+    await contractInstance.createPromoKitty(789, accounts[0], { from: accounts[0] });
   });
 
   it('should create a new virtual cat', async () => {
@@ -18,11 +23,9 @@ contract('KittyCore', accounts => {
 
     assert.exists(result.tx);
   });
-
+  
+  // This test now utilizes pre-created kitties
   it('should allow breeding of two cats and emit a birth event', async () => {
-    await contractInstance.createPromoKitty(123, accounts[0], { from: accounts[0] });
-    await contractInstance.createPromoKitty(456, accounts[0], { from: accounts[0] });
-
     const kittyOneId = 1;
     const kittyTwoId = 2;
 
@@ -35,13 +38,11 @@ contract('KittyCore', accounts => {
     assert.equal(birthEvent.event, 'Birth');
   });
 
+  // Utilizes a kitty created in the `before` hook, minimizing the test setup actions
   it('should transfer a cat to another owner', async () => {
     const sender = accounts[0];
     const receiver = accounts[1];
-
-    await contractInstance.createPromoKitty(789, sender, { from: sender });
-
-    const kittyId = 3;
+    const kittyId = 3; // Assuming this kitty is already created from the before hook
 
     await contractInstance.transfer(receiver, kittyId, { from: sender });
 
@@ -50,11 +51,12 @@ contract('KittyCore', accounts => {
     assert.equal(newOwner, receiver);
   });
 
+  // Test for breeding capability relies on pre-created kitties
   it('should check if two kitties can breed', async () => {
     const kittyOneId = 1;
-    const kittyTwoId = 2;
+    const kittyTwoParId = 2;
 
-    const canBreed = await contractInstance.canBreedWith(kittyOneId, kittyTwoId);
+    const canBreed = await contractInstance.canBreedWith(kittyOneId, kittyTwoParId);
 
     assert.isTrue(canBreed, 'Kitties should be able to breed based on implemented logic');
   });
