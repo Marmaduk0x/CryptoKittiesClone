@@ -7,35 +7,46 @@ const MNEMONIC = process.env.MNEMONIC;
 const INFURA_API_KEY = process.env.INFURA_API_KEY;
 const NETWORK = process.env.NETWORK;
 
-const provider = new HDWalletProvider(
-  MNEMONIC,
-  `https://${NETWORK}.infura.io/v3/${INFURA_API_KEY}`
-);
+if (!MNEMONIC || !INFURA_API_KEY || !NETWORK) {
+    console.error("Missing one or more required environment variables: MNEMONIC, INFURA_API_KEY, NETWORK");
+    process.exit(1);
+}
 
-const web3 = new Web3(provider);
+try {
+    const provider = new HDWalletProvider(
+        MNEMONIC,
+        `https://${NETWORK}.infura.io/v3/${INFURA_API_KEY}`
+    );
 
-const deploy = async () => {
-  try {
-    const accounts = await web3.eth.getAccounts();
-    console.log('Attempting to deploy from account', accounts[0]);
+    const web3 = new Web3(provider);
 
-    if (!accounts[0]) {
-      throw new Error('No accounts found. Check if the MNEMONIC is correct and has access to accounts.');
-    }
+    const deploy = async () => {
+        try {
+            const accounts = await web3.eth.getAccounts();
+            console.log('Attempting to deploy from account', accounts[0]);
 
-    const result = await new web3.eth.Contract(KittyCoreABI.abi)
-      .deploy({ data: KittyCoreABI.bytecode })
-      .send({ from: accounts[0] });
+            if (!accounts[0]) {
+                throw new Error('No accounts found. Check if the MNEMONIC is correct and has access to accounts.');
+            }
 
-    console.log('Contract deployed to', result.options.address);
-  } catch (error) {
-    console.error("Deployment failed:", error.message);
-  } finally {
-    provider.engine.stop();
-  }
-};
+            const result = await new web3.eth.Contract(KittyCoreABI.abi)
+                .deploy({ data: KittyCoreABI.bytecode })
+                .send({ from: accounts[0] });
 
-deploy().catch(error => {
-  console.error("Unhandled error in deployment process:", error.message);
-  provider.engine.stop();
-});
+            console.log('Contract deployed to', result.options.address);
+        } catch (error) {
+            console.error("Deployment failed:", error.message);
+            process.exit(1); // Exit process for fatal deployment error
+        } finally {
+            provider.engine.stop();
+        }
+    };
+
+    deploy().catch(error => {
+        console.error("Unhandled error in deployment process:", error.message);
+        provider.engine.stop();
+    });
+} catch (error) {
+    console.error("Failed to set up the provider or Web3 instance:", error.message);
+    process.exit(1); // Exit process for initialization error
+}
