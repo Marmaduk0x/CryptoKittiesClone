@@ -22,13 +22,24 @@ contract CryptoKittiesClone {
     }
 
     function breed(uint256 _dadId, uint256 _mumId) external {
+        require(_dadId < kitties.length, "Dad does not exist");
+        require(_mumId < kitties.length, "Mum does not exist");
+
         Kitty storage mum = kitties[_mumId];
         Kitty storage dad = kitties[_dadId];
-        uint256 newGen = mum.generation + 1;
+        
+        uint256 newGen = 1 + (mum.generation > dad.generation ? mum.generation : dad.generation);
+        
         _createKitty(_mumId, _dadId, newGen, _mixGenes(mum.genes, dad.genes), msg.sender);
     }
 
-    function _createKitty(uint256 _mumId, uint256 _dadId, uint256 _generation, uint256 _genes, address _owner) internal returns (uint256) {
+    function _createKitty(
+        uint256 _mumId, 
+        uint256 _dadId, 
+        uint256 _generation, 
+        uint256 _genes, 
+        address _owner
+    ) internal returns (uint256) {
         Kitty memory _kitty = Kitty({
             genes: _genes,
             birthTime: uint64(block.timestamp),
@@ -36,15 +47,23 @@ contract CryptoKittiesClone {
             dadId: uint32(_dadId),
             generation: uint16(_generation)
         });
+        
         kitties.push(_kitty);
         uint256 newKittenId = kitties.length - 1;
+        
         emit Birth(_owner, newKittenId, _mumId, _dadId, _genes);
+        
         kittyIndexToOwner[newKittenId] = _owner;
         ownershipTokenCount[_owner]++;
+        
         return newKittenId;
     }
 
     function transfer(address _to, uint256 _kittyId) external {
+        require(msg.sender == kittyIndexToOwner[_kittyId], "You do not own this kitty");
+        require(_to != address(0), "Cannot transfer to the zero address");
+        require(_kittyId < kitties.length, "Kitty does not exist");
+
         ownershipTokenCount[msg.sender]--;
         ownershipTokenCount[_to]++;
         kittyIndexToOwner[_kittyId] = _to;
