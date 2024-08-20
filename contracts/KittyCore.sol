@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 contract CryptoKittiesClone {
-
     event Birth(address owner, uint256 kittyId, uint256 mumId, uint256 dadId, uint256 genes);
 
     struct Kitty {
@@ -12,7 +11,7 @@ contract CryptoKittiesClone {
         uint16 generation;
     }
 
-    Kitty[] kitties;
+    Kitty[] public kitties;
 
     mapping(uint256 => address) public kittyIndexToOwner;
     mapping(address => uint256) ownershipTokenCount;
@@ -25,51 +24,77 @@ contract CryptoKittiesClone {
         require(_dadId < kitties.length, "Dad does not exist");
         require(_mumId < kitties.length, "Mum does not exist");
 
-        Kitty storage mum = kitties[_mumId];
-        Kitty storage dad = kitties[_dadId];
+        (uint256 mumGen, uint256 dadGen) = _getParentGenerations(_mumId, _dadId);
+        uint256 newGen = _calculateNewGeneration(mumGen, dadGen);
+
+        uint256 mixedGenes = _mixGenes(kitties[_mumId].genes, kitties[_dadId].genes);
         
-        uint256 newGen = 1 + (mum.generation > dad.generation ? mum.generation : dad.generation);
-        
-        _createKitty(_mumId, _dadId, newGen, _mixGenes(mum.genes, dad.genes), msg.sender);
+        _createKitty(_mumId, _dadId, newGen, mixedGenes, msg.sender);
     }
 
     function _createKitty(
-        uint256 _mumId, 
-        uint256 _dadId, 
-        uint256 _generation, 
-        uint256 _genes, 
-        address _owner
+        uint256 mumId, 
+        uint256 dadId, 
+        uint256 generation, 
+        uint256 genes, 
+        address owner
     ) internal returns (uint256) {
-        Kitty memory _kitty = Kitty({
-            genes: _genes,
+        Kitty memory newKitty = Kitty({
+            genes: genes,
             birthTime: uint64(block.timestamp),
-            mumId: uint32(_mumId),
-            dadId: uint32(_dadId),
-            generation: uint16(_generation)
+            mumId: uint32(mumId),
+            dadId: uint32(dadId),
+            generation: uint16(generation)
         });
         
-        kitties.push(_kitty);
-        uint256 newKittenId = kitties.length - 1;
-        
-        emit Birth(_owner, newKittenId, _mumId, _dadId, _genes);
-        
-        kittyIndexToOwner[newKittenId] = _owner;
-        ownershipTokenCount[_owner]++;
-        
-        return newKittenId;
+        kitties.push(newKitty);
+        uint256 newKittyId = kitties.length - 1;
+
+        _registerBirth(owner, newKittyId, mumId, dadId, genes);
+
+        return newKittyId;
     }
 
-    function transfer(address _to, uint256 _kittyId) external {
-        require(msg.sender == kittyIndexToOwner[_kittyId], "You do not own this kitty");
-        require(_to != address(0), "Cannot transfer to the zero address");
-        require(_kittyId < kitties.length, "Kitty does not exist");
+    function transfer(address to, uint256 kittyId) external {
+        require(msg.sender == kittyIndexToOwner[kittyId], "You do not own this kitty");
+        require(to != address(0), "Cannot transfer to the zero address");
+        require(kittyId < kitties.length, "Kitty does not exist");
 
-        ownershipTokenCount[msg.sender]--;
-        ownershipTokenCount[_to]++;
-        kittyIndexToOwner[_kittyId] = _to;
+        _transferOwnership(msg.sender, to, kittyId);
     }
 
-    function _mixGenes(uint256 _genes1, uint256 _genes2) internal pure returns (uint256) {
-        return (_genes1 + _genes2) / 2;
+    function _mixGenes(uint256 genes1, uint256 genes2) internal pure returns (uint256) {
+        return (genes1 + genes2) / 2;
+    }
+
+    function _getParentGenerations(uint256 mumId, uint256 dadId) internal view returns (uint256, uint256) {
+        return (kitties[mumId].generation, kitties[dadId].generation);
+    }
+
+    function _calculateNewGeneration(uint256 mumGen, uint256 dadGen) internal pure returns (uint256) {
+        return 1 + (mumGen > dadGen ? mumGen : dadGen);
+    }
+
+    function _registerBirth(
+        address owner,
+        uint256 kittyId,
+        uint256 mumId,
+        uint256 dadId,
+        uint256 genes
+    ) internal {
+        emit Birth(owner, kittyId, mumId, dadId, genes);
+
+        kittyIndexToOwner[kittyId] = owner;
+        ownershipTokenCount[owner]++;
+    }
+
+    function _transferOwnership(
+        address from,
+        address to,
+        uint256 kittyId
+    ) internal {
+        ownershipTokenCount[from]--;
+        ownershipTokenCount[to]++;
+        kittyIndexToOwner[kittyId] = to;
     }
 }
